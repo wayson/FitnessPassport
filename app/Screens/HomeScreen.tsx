@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard, RefreshControl, ScrollView } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 
 interface Facility {
@@ -27,6 +27,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
   useEffect(() => {
     loadFacilities();
@@ -43,18 +44,52 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     }
   };
 
-  // Filter facilities based on search query
+  // Get all unique amenities from facilities
+  const allAmenities = useMemo(() => {
+    const amenitiesSet = new Set<string>();
+    facilities.forEach(facility => {
+      facility.facilities.forEach(amenity => {
+        amenitiesSet.add(amenity);
+      });
+    });
+    return Array.from(amenitiesSet).sort();
+  }, [facilities]);
+
+  // Filter facilities based on search query and selected amenities
   const filteredFacilities = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return facilities;
+    let filtered = facilities;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(facility =>
+        facility.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-    return facilities.filter(facility =>
-      facility.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [facilities, searchQuery]);
+
+    // Apply amenity filter
+    if (selectedAmenities.length > 0) {
+      filtered = filtered.filter(facility =>
+        selectedAmenities.every(amenity =>
+          facility.facilities.includes(amenity)
+        )
+      );
+    }
+
+    return filtered;
+  }, [facilities, searchQuery, selectedAmenities]);
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
+  };
+
+  const toggleAmenity = (amenity: string) => {
+    setSelectedAmenities(prev => {
+      if (prev.includes(amenity)) {
+        return prev.filter(a => a !== amenity);
+      } else {
+        return [...prev, amenity];
+      }
+    });
   };
 
   const onRefresh = async () => {
@@ -99,7 +134,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <Text style={styles.title}>Facility Finder</Text>
           <Text style={styles.subtitle}>Find and explore facilities near you</Text>
           <Text style={styles.count}>
-            {searchQuery.trim() 
+            {searchQuery.trim() || selectedAmenities.length > 0
               ? `${filteredFacilities.length} of ${facilities.length} facilities` 
               : `${facilities.length} facilities available`
             }
@@ -117,6 +152,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             placeholderTextColor="#999"
             clearButtonMode="while-editing"
           />
+        </View>
+
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterTitle}>Filter by amenities:</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.amenityScrollView}
+            contentContainerStyle={styles.amenityScrollContent}
+          >
+            {allAmenities.map((amenity) => (
+              <TouchableOpacity
+                key={amenity}
+                style={[
+                  styles.amenityChip,
+                  selectedAmenities.includes(amenity) && styles.amenityChipSelected
+                ]}
+                onPress={() => toggleAmenity(amenity)}
+              >
+                <Text
+                  style={[
+                    styles.amenityChipText,
+                    selectedAmenities.includes(amenity) && styles.amenityChipTextSelected
+                  ]}
+                >
+                  {amenity}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
         
         <FlatList
@@ -233,6 +298,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  filterContainer: {
+    backgroundColor: 'white',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  amenityScrollView: {
+    flexGrow: 0,
+  },
+  amenityScrollContent: {
+    paddingHorizontal: 0,
+  },
+  amenityChip: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  amenityChipSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  amenityChipText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  amenityChipTextSelected: {
+    color: 'white',
   },
 });
 
