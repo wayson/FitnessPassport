@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 
 interface Facility {
@@ -25,6 +25,7 @@ type HomeScreenProps = {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadFacilities();
@@ -39,6 +40,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter facilities based on search query
+  const filteredFacilities = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return facilities;
+    }
+    return facilities.filter(facility =>
+      facility.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [facilities, searchQuery]);
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
   };
 
   const handleNavigateToDetail = (facility: Facility) => {
@@ -65,29 +80,50 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Facility Finder</Text>
-        <Text style={styles.subtitle}>Find and explore facilities near you</Text>
-        <Text style={styles.count}>{facilities.length} facilities available</Text>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Facility Finder</Text>
+          <Text style={styles.subtitle}>Find and explore facilities near you</Text>
+          <Text style={styles.count}>
+            {searchQuery.trim() 
+              ? `${filteredFacilities.length} of ${facilities.length} facilities` 
+              : `${facilities.length} facilities available`
+            }
+          </Text>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search facilities by name..."
+            value={searchQuery}
+            autoComplete="off"
+            autoCorrect={false}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#999"
+            clearButtonMode="while-editing"
+          />
+        </View>
+        
+        <FlatList
+          data={filteredFacilities}
+          renderItem={renderFacilityItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          getItemLayout={(data, index) => ({
+            length: 80,
+            offset: 80 * index,
+            index,
+          })}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={21}
+          keyboardShouldPersistTaps="handled"
+        />
       </View>
-      
-      <FlatList
-        data={facilities}
-        renderItem={renderFacilityItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        getItemLayout={(data, index) => ({
-          length: 80,
-          offset: 80 * index,
-          index,
-        })}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={21}
-      />
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -112,6 +148,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  searchContainer: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    height: 44,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   title: {
     fontSize: 28,
