@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard, RefreshControl } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 
 interface Facility {
@@ -25,6 +25,7 @@ type HomeScreenProps = {
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -54,6 +55,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const facilitiesData = require('../assets/facilities.json');
+      setFacilities(facilitiesData);
+    } catch (error) {
+      console.error('Error refreshing facilities:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleNavigateToDetail = (facility: Facility) => {
@@ -112,6 +125,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#007AFF']}
+              tintColor="#007AFF"
+            />
+          }
           getItemLayout={(data, index) => ({
             length: 80,
             offset: 80 * index,
@@ -152,8 +173,9 @@ const styles = StyleSheet.create({
   searchContainer: {
     backgroundColor: 'white',
     paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingVertical: 15,
     borderBottomWidth: 1,
+    justifyContent: 'center',
     borderBottomColor: '#e0e0e0',
   },
   searchInput: {
