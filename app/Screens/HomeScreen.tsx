@@ -131,7 +131,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Facility Finder</Text>
           <Text style={styles.subtitle}>Find and explore facilities near you</Text>
           <Text style={styles.count}>
             {searchQuery.trim() || selectedAmenities.length > 0
@@ -189,7 +188,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           renderItem={renderFacilityItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
