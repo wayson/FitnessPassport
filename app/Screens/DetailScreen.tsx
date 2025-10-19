@@ -1,22 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { NavigationProp, RouteProp } from '@react-navigation/native';
-
-interface Facility {
-  id: string;
-  name: string;
-  address: string;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  facilities: string[];
-}
-
-type RootStackParamList = {
-  Home: undefined;
-  Detail: { facility: Facility };
-};
+import { Facility, RootStackParamList } from '../types';
 
 type DetailScreenProps = {
   navigation: NavigationProp<RootStackParamList, 'Detail'>;

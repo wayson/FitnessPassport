@@ -1,0 +1,1 @@
+export { facilityService, FacilityService } from './facilityService';

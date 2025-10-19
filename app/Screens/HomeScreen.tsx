@@ -1,107 +1,27 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard, RefreshControl, ScrollView } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
-
-interface Facility {
-  id: string;
-  name: string;
-  address: string;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  facilities: string[];
-}
-
-type RootStackParamList = {
-  Home: undefined;
-  Detail: { facility: Facility };
-};
+import { Facility, RootStackParamList } from '../types';
+import { useFacilities, useFacilityFilter } from '../hooks';
 
 type HomeScreenProps = {
   navigation: NavigationProp<RootStackParamList, 'Home'>;
 };
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [facilities, setFacilities] = useState<Facility[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
-
-  useEffect(() => {
-    loadFacilities();
-  }, []);
-
-  const loadFacilities = async () => {
-    try {
-      const facilitiesData = require('../assets/facilities.json');
-      setFacilities(facilitiesData);
-    } catch (error) {
-      console.error('Error loading facilities:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get all unique amenities from facilities
-  const allAmenities = useMemo(() => {
-    const amenitiesSet = new Set<string>();
-    facilities.forEach(facility => {
-      facility.facilities.forEach(amenity => {
-        amenitiesSet.add(amenity);
-      });
-    });
-    return Array.from(amenitiesSet).sort();
-  }, [facilities]);
-
-  // Filter facilities based on search query and selected amenities
-  const filteredFacilities = useMemo(() => {
-    let filtered = facilities;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(facility =>
-        facility.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply amenity filter
-    if (selectedAmenities.length > 0) {
-      filtered = filtered.filter(facility =>
-        selectedAmenities.every(amenity =>
-          facility.facilities.includes(amenity)
-        )
-      );
-    }
-
-    return filtered;
-  }, [facilities, searchQuery, selectedAmenities]);
+  // Use custom hooks for business logic
+  const { facilities, loading, refreshing, refreshFacilities } = useFacilities();
+  const { 
+    filter, 
+    allAmenities, 
+    filteredFacilities, 
+    setSearchQuery, 
+    toggleAmenity, 
+    hasActiveFilters 
+  } = useFacilityFilter(facilities);
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
-  };
-
-  const toggleAmenity = (amenity: string) => {
-    setSelectedAmenities(prev => {
-      if (prev.includes(amenity)) {
-        return prev.filter(a => a !== amenity);
-      } else {
-        return [...prev, amenity];
-      }
-    });
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      const facilitiesData = require('../assets/facilities.json');
-      setFacilities(facilitiesData);
-    } catch (error) {
-      console.error('Error refreshing facilities:', error);
-    } finally {
-      setRefreshing(false);
-    }
   };
 
   const handleNavigateToDetail = (facility: Facility) => {
@@ -133,7 +53,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.header}>
           <Text style={styles.subtitle}>Find and explore facilities near you</Text>
           <Text style={styles.count}>
-            {searchQuery.trim() || selectedAmenities.length > 0
+            {hasActiveFilters
               ? `${filteredFacilities.length} of ${facilities.length} facilities` 
               : `${facilities.length} facilities available`
             }
@@ -144,7 +64,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           <TextInput
             style={styles.searchInput}
             placeholder="Search facilities by name..."
-            value={searchQuery}
+            value={filter.searchQuery}
             autoComplete="off"
             autoCorrect={false}
             onChangeText={setSearchQuery}
@@ -166,14 +86,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
                 key={amenity}
                 style={[
                   styles.amenityChip,
-                  selectedAmenities.includes(amenity) && styles.amenityChipSelected
+                  filter.selectedAmenities.includes(amenity) && styles.amenityChipSelected
                 ]}
                 onPress={() => toggleAmenity(amenity)}
               >
                 <Text
                   style={[
                     styles.amenityChipText,
-                    selectedAmenities.includes(amenity) && styles.amenityChipTextSelected
+                    filter.selectedAmenities.includes(amenity) && styles.amenityChipTextSelected
                   ]}
                 >
                   {amenity}
@@ -191,7 +111,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={onRefresh}
+              onRefresh={refreshFacilities}
               colors={['#007AFF']}
               tintColor="#007AFF"
             />
