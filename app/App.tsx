@@ -4,17 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './Screens/HomeScreen';
 import DetailScreen from './Screens/DetailScreen';
-
-interface Facility {
-  id: string;
-  name: string;
-  address: string;
-  location: {
-    latitude: number;
-    longitude: number;
-  };
-  facilities: string[];
-}
+import { Facility } from './types';
 
 type RootStackParamList = {
   Home: undefined;

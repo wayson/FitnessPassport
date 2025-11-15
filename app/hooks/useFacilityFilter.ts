@@ -1,30 +1,45 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Facility, FacilityFilter } from '../types';
 import { facilityService } from '../services/facilityService';
-import { extractUniqueAmenities, toggleArrayItem } from '../utils';
+import { extractUniqueAmenities, toggleArrayItem, debounce } from '../utils';
 
 /**
- * Custom hook for managing facility filtering and search
+ * Custom hook for managing facility filtering and search with debounced search
  */
 export const useFacilityFilter = (facilities: Facility[]) => {
   const [filter, setFilter] = useState<FacilityFilter>({
     searchQuery: '',
     selectedAmenities: []
   });
+  
+  // Separate state for the actual search term used in filtering
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  
+  // Create a debounced function for updating the search query
+  const debouncedSetSearchQuery = useRef(
+    debounce((searchQuery: string) => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 1500) // 300ms delay
+  );
+
+  // Update the debounced search query when the immediate search query changes
+  useEffect(() => {
+    debouncedSetSearchQuery.current(filter.searchQuery);
+  }, [filter.searchQuery]);
 
   // Get all unique amenities from facilities
   const allAmenities = useMemo(() => {
     return extractUniqueAmenities(facilities);
   }, [facilities]);
 
-  // Apply filters to facilities
+  // Apply filters to facilities using the debounced search query
   const filteredFacilities = useMemo(() => {
     return facilityService.applyFilters(
       facilities,
-      filter.searchQuery,
+      debouncedSearchQuery,
       filter.selectedAmenities
     );
-  }, [facilities, filter.searchQuery, filter.selectedAmenities]);
+  }, [facilities, debouncedSearchQuery, filter.selectedAmenities]);
 
   // Update search query
   const setSearchQuery = useCallback((searchQuery: string) => {
@@ -47,10 +62,10 @@ export const useFacilityFilter = (facilities: Facility[]) => {
     });
   }, []);
 
-  // Check if any filters are active
+  // Check if any filters are active using the debounced search query
   const hasActiveFilters = useMemo(() => {
-    return filter.searchQuery.trim().length > 0 || filter.selectedAmenities.length > 0;
-  }, [filter.searchQuery, filter.selectedAmenities]);
+    return debouncedSearchQuery.trim().length > 0 || filter.selectedAmenities.length > 0;
+  }, [debouncedSearchQuery, filter.selectedAmenities]);
 
   return {
     filter,

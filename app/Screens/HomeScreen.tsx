@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { NavigationProp } from '@react-navigation/native';
 import { Facility, RootStackParamList } from '../types';
 import { useFacilities, useFacilityFilter } from '../hooks';
+import SearchInput from '../components/SearchInput';
 
 type HomeScreenProps = {
   navigation: NavigationProp<RootStackParamList, 'Home'>;
@@ -59,20 +60,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             }
           </Text>
         </View>
-
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search facilities by name..."
-            value={filter.searchQuery}
-            autoComplete="off"
-            autoCorrect={false}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
-            clearButtonMode="while-editing"
-          />
-        </View>
-
+        <SearchInput
+          value={filter.searchQuery}
+          onChangeText={setSearchQuery}
+        />
         <View style={styles.filterContainer}>
           <Text style={styles.filterTitle}>Filter by amenities:</Text>
           <ScrollView 
@@ -102,6 +93,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
             ))}
           </ScrollView>
         </View>
+
+        {filteredFacilities.length === 0 && (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>No facilities found.</Text>
+          </View>
+          )}
+
         
         <FlatList
           data={filteredFacilities}
