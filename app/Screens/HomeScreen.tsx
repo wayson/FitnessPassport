@@ -1,258 +1,68 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, TextInput, TouchableWithoutFeedback, Keyboard, RefreshControl, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { NavigationProp } from '@react-navigation/native';
 import { Facility, RootStackParamList } from '../types';
 import { useFacilities, useFacilityFilter } from '../hooks';
 import SearchInput from '../components/SearchInput';
+import LoadingIndicator from '../components/LoadingIndicator';
+import AmenityFilter from '../components/AmenityFilter';
+import Header from '../components/Header';
+import FacilityList from '../components/FacilityList';
 
 type HomeScreenProps = {
   navigation: NavigationProp<RootStackParamList, 'Home'>;
 };
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
-  // Use custom hooks for business logic
   const { facilities, loading, refreshing, refreshFacilities } = useFacilities();
-  const { 
-    filter, 
-    allAmenities, 
-    filteredFacilities, 
-    setSearchQuery, 
-    toggleAmenity, 
-    hasActiveFilters 
+  const {
+    filter,
+    allAmenities,
+    filteredFacilities,
+    setSearchQuery,
+    toggleAmenity,
+    hasActiveFilters,
   } = useFacilityFilter(facilities);
-
-  const dismissKeyboard = () => {
-    Keyboard.dismiss();
-  };
 
   const handleNavigateToDetail = (facility: Facility) => {
     navigation.navigate('Detail', { facility });
   };
 
-  const renderFacilityItem = ({ item }: { item: Facility }) => (
-    <TouchableOpacity 
-      style={styles.facilityItem} 
-      onPress={() => handleNavigateToDetail(item)}
-    >
-      <Text style={styles.facilityName}>{item.name}</Text>
-      <Text style={styles.facilityAddress}>{item.address}</Text>
-    </TouchableOpacity>
-  );
-
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading facilities...</Text>
-      </View>
-    );
+    return <LoadingIndicator text="Loading facilities..." />;
   }
 
   return (
-    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>Find and explore facilities near you</Text>
-          <Text style={styles.count}>
-            {hasActiveFilters
-              ? `${filteredFacilities.length} of ${facilities.length} facilities` 
-              : `${facilities.length} facilities available`
-            }
-          </Text>
-        </View>
+        <Header
+          filteredCount={filteredFacilities.length}
+          totalCount={facilities.length}
+          hasActiveFilters={hasActiveFilters}
+        />
         <SearchInput
           value={filter.searchQuery}
           onChangeText={setSearchQuery}
         />
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterTitle}>Filter by amenities:</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.amenityScrollView}
-            contentContainerStyle={styles.amenityScrollContent}
-          >
-            {allAmenities.map((amenity) => (
-              <TouchableOpacity
-                key={amenity}
-                style={[
-                  styles.amenityChip,
-                  filter.selectedAmenities.includes(amenity) && styles.amenityChipSelected
-                ]}
-                onPress={() => toggleAmenity(amenity)}
-              >
-                <Text
-                  style={[
-                    styles.amenityChipText,
-                    filter.selectedAmenities.includes(amenity) && styles.amenityChipTextSelected
-                  ]}
-                >
-                  {amenity}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {filteredFacilities.length === 0 && (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>No facilities found.</Text>
-          </View>
-          )}
-
-        
-        <FlatList
-          data={filteredFacilities}
-          renderItem={renderFacilityItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={refreshFacilities}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
-            />
-          }
-          getItemLayout={(data, index) => ({
-            length: 80,
-            offset: 80 * index,
-            index,
-          })}
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={21}
-          keyboardShouldPersistTaps="handled"
+        <AmenityFilter
+          allAmenities={allAmenities}
+          selectedAmenities={filter.selectedAmenities}
+          toggleAmenity={toggleAmenity}
+        />
+        <FacilityList
+          facilities={filteredFacilities}
+          onRefresh={refreshFacilities}
+          refreshing={refreshing}
+          onNavigateToDetail={handleNavigateToDetail}
         />
       </View>
     </TouchableWithoutFeedback>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  searchContainer: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    justifyContent: 'center',
-    borderBottomColor: '#e0e0e0',
-  },
-  searchInput: {
-    height: 44,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  count: {
-    fontSize: 14,
-    color: '#007AFF',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  facilityItem: {
-    backgroundColor: 'white',
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
-  },
-  facilityName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  facilityAddress: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  filterContainer: {
-    backgroundColor: 'white',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  filterTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-  },
-  amenityScrollView: {
-    flexGrow: 0,
-  },
-  amenityScrollContent: {
-    paddingHorizontal: 0,
-  },
-  amenityChip: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  amenityChipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  amenityChipText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-  },
-  amenityChipTextSelected: {
-    color: 'white',
   },
 });
