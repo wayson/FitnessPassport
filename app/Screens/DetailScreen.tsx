@@ -8,7 +8,7 @@ type DetailScreenProps = {
   route: RouteProp<RootStackParamList, 'Detail'>;
 };
 
-const DetailScreen: React.FC<DetailScreenProps> = ({ navigation, route }) => {
+const DetailScreen = ({ navigation, route }: DetailScreenProps) => {
   const { facility } = route.params;
 
   const handleGoBack = () => {

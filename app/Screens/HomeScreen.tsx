@@ -9,7 +9,7 @@ type HomeScreenProps = {
   navigation: NavigationProp<RootStackParamList, 'Home'>;
 };
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   // Use custom hooks for business logic
   const { facilities, loading, refreshing, refreshFacilities } = useFacilities();
   const { 
@@ -256,5 +256,3 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
-
-export default HomeScreen;
